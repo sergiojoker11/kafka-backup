@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<lb:configuration
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://ch.qos.logback/xml/ns/logback https://raw.githubusercontent.com/enricopulatzo/logback-XSD/master/src/main/xsd/logback.xsd"
+        xsi:noNamespaceSchemaLocation="http://ch.qos.logback/xml/ns/logback"
+        xmlns:lb="http://ch.qos.logback/xml/ns/logback"
+        scan="true" scanPeriod="5 seconds" debug="false">
+
+    <lb:appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <lb:encoder>
+            <lb:pattern>%date{ISO8601} [%thread] %highlight(%-5level) %cyan(%logger{15}) - %msg %n
+            </lb:pattern>
+            <lb:charset>UTF-8</lb:charset>
+        </lb:encoder>
+    </lb:appender>
+
+    <lb:appender name="async_stdout" class="ch.qos.logback.classic.AsyncAppender">
+        <lb:appender-ref ref="stdout" />
+    </lb:appender>
+
+<!--    <lb:logger name="org.apache.kafka" level="info"></lb:logger>-->
+
+    <lb:root level="info">
+        <lb:appender-ref ref="async_stdout"/>
+    </lb:root>
+
+</lb:configuration>
