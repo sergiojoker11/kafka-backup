@@ -3,8 +3,10 @@ package com.sj11.kafka.backup
 import cats.effect.{ExitCode, IO, IOApp, Resource}
 import com.sj11.kafka.backup.kafka.Consumer
 import com.sj11.kafka.backup.kafka.model.ConsumerConfig
-import com.sj11.kafka.backup.service.Backup
+import com.sj11.kafka.backup.service.FileSystemBackup
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+import java.nio.file.Paths
 
 object Main extends IOApp {
 
@@ -25,7 +27,7 @@ object Main extends IOApp {
     for {
       consumer <- Consumer.create[IO](
         ConsumerConfig.get,
-        new Backup[IO].apply
+        new FileSystemBackup[IO](Paths.get("/tmp")).backup
       )
     } yield consumer
   }
