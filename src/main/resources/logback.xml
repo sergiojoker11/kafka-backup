@@ -20,7 +20,7 @@
         <lb:appender-ref ref="stdout" />
     </lb:appender>
 
-<!--    <lb:logger name="org.apache.kafka" level="info"></lb:logger>-->
+    <lb:logger name="com.sj11.kafka.backup.kafka.ConsumerImpl" level="debug"></lb:logger>
 
     <lb:root level="info">
         <lb:appender-ref ref="async_stdout"/>
