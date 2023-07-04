@@ -4,6 +4,7 @@ import fs2.kafka.{ConsumerRecord, Header, Headers, Timestamp}
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
+import java.nio.file.Paths
 import java.time.Instant
 
 object Utils {
@@ -21,12 +22,14 @@ object Utils {
     r1.topic shouldEqual r2.topic
     r1.partition shouldEqual r2.partition
     r1.offset shouldEqual r2.offset
-    new String(r1.key) shouldEqual new String(r2.key)
-    new String(r1.value) shouldEqual new String(r2.value)
+    r1.key shouldEqual r2.key
+    r1.value shouldEqual r2.value
     r1.headers.toChain.toList.zip(r2.headers.toChain.toList).foreach { case (h1, h2) =>
       h1.key() shouldEqual h2.key()
-      new String(h1.value()) shouldEqual new String(h2.value())
+      h1.value() shouldEqual h2.value()
     }
     r1.timestamp.createTime shouldEqual r2.timestamp.createTime
   }
+
+  def backup(name: String) = Paths.get("/tmp", name, Instant.now().toEpochMilli.toString)
 }
