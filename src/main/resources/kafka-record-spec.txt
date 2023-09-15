@@ -1,0 +1,17 @@
+
+# Record Format:
+  offset: int64
+  timestampType: int32 -2 if timestamp is null
+  [timestamp: int64] if timestampType != NO_TIMESTAMP_TYPE && timestamp != null
+  keyLength: int32
+  [key: byte[keyLength]] if keyLength >= 0
+  valueLength: int32
+  [value: byte[valueLength]] if valueLength >= 0
+  headerCount: int32
+  headers: Header[headerCount]
+
+ # Header Format:
+   headerKeyLength: int32
+   headerKey: byte[headerKeyLength]
+   headerValueLength: int32
+   [headerValue:byte[headerValueLength]] if headerValueLength >= 0

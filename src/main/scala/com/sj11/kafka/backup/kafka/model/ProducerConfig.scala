@@ -1,44 +1,41 @@
 package com.sj11.kafka.backup.kafka.model
 
 import com.typesafe.config.ConfigFactory
-import fs2.kafka.AutoOffsetReset
 
-import java.time.Instant
+import java.util.UUID
 
-case class ConsumerConfig(
+case class ProducerConfig(
   schemaRegistryUrl: String,
   schemaRegistryUsername: String,
   schemaRegistryPassword: String,
   kafkaBootstrap: String,
   sslEnabled: Boolean,
-  keysPassword: String,
-  groupId: String,
-  topicRegex: String,
   clientId: String,
+  noRetries: Int,
   truststoreLocation: String,
   keystoreLocation: String,
   keystoreType: String,
-  autoOffsetReset: AutoOffsetReset)
+  keysPassword: String,
+  topic: String,
+  strategy: String)
   extends Ssl
-
-object ConsumerConfig {
+object ProducerConfig {
 
   private val kafkaConfig = ConfigFactory.load().getConfig("service.kafka")
-  private val now = Instant.now()
 
-  def get = ConsumerConfig(
+  def get = ProducerConfig(
     schemaRegistryUrl = kafkaConfig.getString("schema-registry-url"),
     schemaRegistryUsername = kafkaConfig.getString("schema-registry-username"),
     schemaRegistryPassword = kafkaConfig.getString("schema-registry-password"),
     kafkaBootstrap = kafkaConfig.getString("bootstrap-servers"),
     sslEnabled = kafkaConfig.getBoolean("ssl-enabled"),
-    keysPassword = kafkaConfig.getString("keys-password"),
-    groupId = s"${kafkaConfig.getString("group-id-prefix")}-$now",
-    topicRegex = kafkaConfig.getString("topic-regex"),
-    clientId = s"${kafkaConfig.getString("client-id-prefix")}-$now",
+    clientId = s"${kafkaConfig.getString("client-id")}-${UUID.randomUUID()}",
+    noRetries = kafkaConfig.getInt("number-of-retries"),
     truststoreLocation = kafkaConfig.getString("truststore-location"),
     keystoreLocation = kafkaConfig.getString("keystore-location"),
     keystoreType = kafkaConfig.getString("keystore-type"),
-    autoOffsetReset = AutoOffsetReset.Latest
+    keysPassword = kafkaConfig.getString("keys-password"),
+    topic = "n/a",
+    strategy = "TopicRecordNameStrategy"
   )
 }

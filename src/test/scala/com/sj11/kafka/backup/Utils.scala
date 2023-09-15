@@ -1,5 +1,6 @@
 package com.sj11.kafka.backup
 
+import com.sj11.kafka.backup.service.model.RecordBackup
 import fs2.kafka.{ConsumerRecord, Header, Headers, Timestamp}
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -29,6 +30,13 @@ object Utils {
       h1.value() shouldEqual h2.value()
     }
     r1.timestamp.createTime shouldEqual r2.timestamp.createTime
+  }
+
+  def assertR(r1: RecordBackup, r2: RecordBackup): Assertion = {
+    r1.topic shouldEqual r2.topic
+    r1.partition shouldEqual r2.partition
+    r1.offset shouldEqual r2.offset
+    r1.content shouldEqual r2.content
   }
 
   def backup(name: String) = Paths.get("/tmp", name, Instant.now().toEpochMilli.toString)

@@ -12,6 +12,16 @@ import scala.util.Try
 
 object FileBackupIterator {
 
+  def streamMessages[F[_]: Async](path: Path): fs2.Stream[F, (String, Int, Long, fs2.io.file.Path)] = Files[F]
+    .walk(fromNioPath(path))
+    .filter(p => JFiles.isRegularFile(p.toNioPath))
+    .evalMap(p =>
+      Async[F]
+        .fromTry(Try {
+          val segments = p.toString.split(File.separator).toList
+          (segments.init.init.last, segments.init.last.toInt, segments.last.toLong, p)
+        }))
+
   def readMessagesInOrder[F[_]: Async](
     path: Path): F[Map[String, Map[Int, List[(String, Int, Long, fs2.io.file.Path)]]]] = {
     Files[F]

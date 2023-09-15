@@ -7,8 +7,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.nio.file.Path
 import cats.effect.unsafe.implicits.global
-import com.sj11.kafka.backup.service.RecordConverter.fromBinary
 import com.sj11.kafka.backup.service.Utils.backedUpRecord
+import com.sj11.kafka.backup.service.model.RecordBackup
 import fs2.io.file.Files
 import fs2.io.file.Path.fromNioPath
 
@@ -22,8 +22,9 @@ class FileSystemBackupSpec extends AnyFlatSpec {
     (for {
       _ <- service(backupPath).backup(inputRecord)
       record <- Files[IO].readAll(fromNioPath(recordPath)).compile.toList.map(_.toArray)
-      consumerRecord <- IO.fromTry(fromBinary(topic, partition, record))
-    } yield assertR(inputRecord, consumerRecord)).unsafeRunSync()
+      inputRecordBackup <- IO.fromTry(RecordBackup.from(inputRecord))
+      resultRecordBackup = RecordBackup(topic, partition, inputRecord.offset, record)
+    } yield assertR(inputRecordBackup, resultRecordBackup)).unsafeRunSync()
   }
 
   def service(backupPath: Path) = new FileSystemBackup[IO](backupPath)

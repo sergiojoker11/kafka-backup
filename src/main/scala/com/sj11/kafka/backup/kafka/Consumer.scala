@@ -32,7 +32,7 @@ class ConsumerImpl[F[_]](
 
   implicit val logger = Slf4jLogger.getLogger[F]
   println(adminClient)
-  def stream = {
+  def stream: fs2.Stream[F, Unit] = {
     fs2
       .Stream(consumer)
       .evalTap(_.subscribe(config.topicRegex.r))
@@ -49,9 +49,7 @@ class ConsumerImpl[F[_]](
           s"Error parsing kafka event with message: '${e.getMessage}'. ${e.getStackTrace.toList.mkString("\n")} "))
       }
       .through(commitBatchWithin(1, 15.seconds))
-
   }
-
 }
 
 object Consumer {
