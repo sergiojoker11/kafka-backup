@@ -15,7 +15,7 @@ trait Restore[F[_]] {
   def apply(topic: String, partition: Int, record: Array[Byte]): F[Unit]
 
 }
-class FileSystemRestore[F[_]: Async](backupPath: Path, producer: Producer[F]) {
+class FileSystemRestore[F[_]: Async: Files](backupPath: Path, producer: Producer[F]) {
 
   def restore(topic: String, partition: Int, offset: Long): F[Unit] = {
     val recordPath = fromNioPath(backedUpRecord(backupPath, topic, partition, offset))

@@ -12,7 +12,7 @@ object Utils {
   def backedUpRecord(backupPath: Path, topic: String, partition: Int, offset: Long): Path =
     backupPath.resolve(topic).resolve(partition.toString).resolve(offset.toString)
 
-  def writeRecordInDisk[F[_]: Async](backupPath: Path, r: RecordBackup): F[Unit] = {
+  def writeRecordInDisk[F[_]: Async: Files](backupPath: Path, r: RecordBackup): F[Unit] = {
     val recordPath = fromNioPath(backedUpRecord(backupPath, r.topic, r.partition, r.offset))
     for {
       _ <- Files[F].createDirectories(recordPath.parent.orNull)
