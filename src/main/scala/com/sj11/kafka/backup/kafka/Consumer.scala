@@ -3,11 +3,11 @@ package com.sj11.kafka.backup.kafka
 import cats.effect._
 import cats.implicits._
 import com.sj11.kafka.backup.kafka.model.{ConsumerConfig, Ssl}
+import com.sj11.kafka.backup.service.model.RecordBackup
 import com.sj11.kafka.backup.utils.LoggingUtil.withDebugLogging
 import fs2.kafka.{
   commitBatchWithin,
   AdminClientSettings,
-  ConsumerRecord,
   ConsumerSettings,
   Deserializer,
   KafkaAdminClient,
@@ -24,7 +24,7 @@ trait Consumer[F[_]] {
 
 class ConsumerImpl[F[_]](
   config: ConsumerConfig,
-  task: ConsumerRecord[Array[Byte], Array[Byte]] => F[Unit],
+  task: RecordBackup => F[Unit],
   adminClient: KafkaAdminClient[F],
   consumer: KafkaConsumer[F, Array[Byte], Array[Byte]]
 )(implicit F: Async[F])
@@ -40,8 +40,10 @@ class ConsumerImpl[F[_]](
       .evalMap { committable =>
         withDebugLogging(
           s"Consuming record. Topic: ${committable.record.topic}. Partition: ${committable.record.partition} with offset: ${committable.record.offset}") {
-          task(committable.record)
-            .map(_ => committable.offset)
+          for {
+            recordBackup <- Async[F].fromTry(RecordBackup.from(committable.record))
+            r <- task(recordBackup).map(_ => committable.offset)
+          } yield r
         }
       }
       .onError { case e =>
@@ -54,9 +56,7 @@ class ConsumerImpl[F[_]](
 
 object Consumer {
 
-  def create[F[_]: Async](
-    config: ConsumerConfig,
-    task: ConsumerRecord[Array[Byte], Array[Byte]] => F[Unit]): Resource[F, Consumer[F]] = {
+  def create[F[_]: Async](config: ConsumerConfig, task: RecordBackup => F[Unit]): Resource[F, Consumer[F]] = {
 
     val adminClientSettings = AdminClientSettings(config.kafkaBootstrap)
       .withClientId(s"backup-service-${UUID.randomUUID()}")
