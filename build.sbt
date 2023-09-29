@@ -12,7 +12,6 @@ lazy val commonDeps: Seq[ModuleID] = Seq(
   "io.circe" %% "circe-parser" % circeVersion,
   "io.circe" %% "circe-literal" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion
-//  "io.circe" %% "circe-generic-extras" % circeVersion
 )
 
 lazy val productionDeps: Seq[ModuleID] = Seq(
