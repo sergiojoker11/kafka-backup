@@ -67,7 +67,9 @@ object TimestampType {
   }
 }
 
-case class TimestampBinary(`type`: Int, value: Option[Long])
+case class TimestampBinary(`type`: Int, value: Option[Long]) {
+  def getIfDefined: Option[Long] = if (`type` > 0) value else None
+}
 
 object TimestampBinary {
   def from(t: Timestamp): TimestampBinary = {

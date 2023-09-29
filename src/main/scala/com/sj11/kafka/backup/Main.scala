@@ -36,9 +36,9 @@ object Main extends IOApp {
   def runRestore(args: List[String]): IO[ExitCode] = {
     (for {
       _ <- logger.info(s"Starting Kafka Restore")
-      _ <- restoreResources().use { producer =>
+      _ <- restoreResources().use { restoreService =>
         streamMessages[IO](Paths.get("/tmp")).evalMap { case (topic, partition, offset, _) =>
-          producer.restore(topic, partition, offset)
+          restoreService.restore(topic, partition, offset)
         }.compile.drain
       }
       _ <- logger.info("Exiting")

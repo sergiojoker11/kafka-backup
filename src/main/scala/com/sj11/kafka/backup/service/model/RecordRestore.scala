@@ -1,13 +1,29 @@
 package com.sj11.kafka.backup.service.model
 
 import cats.implicits._
-import com.sj11.kafka.backup.service.{CreateTime, HeaderRecordBinary, LogAppendTime, NoTime, RecordBinary, TimestampBinary, TimestampType, UnknownTime}
-import fs2.kafka.{Header, Timestamp}
+import com.sj11.kafka.backup.service.{
+  CreateTime,
+  HeaderRecordBinary,
+  LogAppendTime,
+  NoTime,
+  RecordBinary,
+  TimestampBinary,
+  TimestampType,
+  UnknownTime
+}
+import fs2.kafka.{Header, Headers, ProducerRecord, Timestamp}
 
 import java.io.{ByteArrayInputStream, DataInputStream}
 import scala.util.Try
 
-case class RecordRestore(topic: String, partition: Int, offset: Long, binary: RecordBinary)
+case class RecordRestore(topic: String, partition: Int, offset: Long, binary: RecordBinary) {
+  def to: ProducerRecord[Array[Byte], Array[Byte]] = {
+    val r = ProducerRecord(topic, binary.key, binary.value)
+      .withPartition(partition)
+      .withHeaders(Headers.fromIterable(binary.headers.map(_.to())))
+    binary.timestamp.getIfDefined.fold(r)(r.withTimestamp(_))
+  }
+}
 
 object RecordRestore {
   def from(record: RecordBackup): Try[RecordRestore] =
