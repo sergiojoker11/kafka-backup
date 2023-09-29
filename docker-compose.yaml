@@ -2,50 +2,99 @@ version: '3.8'
 
 services:
 
-  zookeeper:
+  zookeeper-src:
     image: confluentinc/cp-zookeeper:7.3.1
-    hostname: zookeeper
+    hostname: zookeeper-src
     ports:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  broker:
+  broker-src:
     image: confluentinc/cp-kafka:7.3.1
-    hostname: broker
+    hostname: broker-src
     depends_on:
-      - zookeeper
+      - zookeeper-src
     ports:
       - "9092:9092"
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper-src:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-src:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
 
-  schema-registry:
+  schema-registry-src:
     image: ghcr.io/aiven/karapace:3.3.3
-    hostname: schema-registry
+    hostname: schema-registry-src
     entrypoint:
       - /bin/bash
       - /opt/karapace/start.sh
       - registry
     depends_on:
-      - zookeeper
-      - broker
+      - zookeeper-src
+      - broker-src
     ports:
       - "8085:8081"
     environment:
-      KARAPACE_ADVERTISED_HOSTNAME: schema-registry
-      KARAPACE_BOOTSTRAP_URI: broker:9092
+      KARAPACE_ADVERTISED_HOSTNAME: schema-registry-src
+      KARAPACE_BOOTSTRAP_URI: broker-src:9092
       KARAPACE_PORT: 8081
       KARAPACE_HOST: 0.0.0.0
-      KARAPACE_CLIENT_ID: karapace
-      KARAPACE_GROUP_ID: karapace-registry
+      KARAPACE_CLIENT_ID: karapace-src
+      KARAPACE_GROUP_ID: karapace-registry-src
+      KARAPACE_MASTER_ELIGIBILITY: "true"
+      KARAPACE_TOPIC_NAME: _schemas
+      KARAPACE_LOG_LEVEL: WARNING
+      KARAPACE_COMPATIBILITY: FULL
+
+  zookeeper-end:
+    image: confluentinc/cp-zookeeper:7.3.1
+    hostname: zookeeper-end
+    ports:
+      - "2182:2182"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2182
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker-end:
+    image: confluentinc/cp-kafka:7.3.1
+    hostname: broker-end
+    depends_on:
+      - zookeeper-end
+    ports:
+      - "9093:9093"
+      - "29093:29093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper-end:2182'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-end:9093,PLAINTEXT_HOST://localhost:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  schema-registry-end:
+    image: ghcr.io/aiven/karapace:3.3.3
+    hostname: schema-registry-end
+    entrypoint:
+      - /bin/bash
+      - /opt/karapace/start.sh
+      - registry
+    depends_on:
+      - zookeeper-end
+      - broker-end
+    ports:
+      - "8086:8081"
+    environment:
+      KARAPACE_ADVERTISED_HOSTNAME: schema-registry-end
+      KARAPACE_BOOTSTRAP_URI: broker-end:9093
+      KARAPACE_PORT: 8081
+      KARAPACE_HOST: 0.0.0.0
+      KARAPACE_CLIENT_ID: karapace-end
+      KARAPACE_GROUP_ID: karapace-registry-end
       KARAPACE_MASTER_ELIGIBILITY: "true"
       KARAPACE_TOPIC_NAME: _schemas
       KARAPACE_LOG_LEVEL: WARNING
@@ -56,14 +105,17 @@ services:
     hostname: control-center
     container_name: control-center
     depends_on:
-      - zookeeper
-      - broker
-      - schema-registry
+      - zookeeper-src
+      - broker-src
+      - schema-registry-src
+      - zookeeper-end
+      - broker-end
+      - schema-registry-end
     ports:
       - "9021:9021"
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:9092'
-      CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker-src:9092,broker-src:9093'
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper-src:2181,zookeeper-src:2182'
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
