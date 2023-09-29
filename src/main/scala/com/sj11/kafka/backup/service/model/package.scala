@@ -1,16 +1,37 @@
 package com.sj11.kafka.backup.service
 
-import cats.implicits.catsSyntaxOptionId
-import fs2.kafka.{ConsumerRecord, Timestamp}
+import cats.implicits._
+import fs2.kafka.{ConsumerRecord, Header, Timestamp}
 
-case class RecordBackup(topic: String, partition: Int, offset: Long, content: Array[Byte])
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 
 case class RecordBinary(
   offset: Long,
   timestamp: TimestampBinary,
   key: Array[Byte],
   value: Array[Byte],
-  headers: List[HeaderRecordBinary])
+  headers: List[HeaderRecordBinary]) {
+  def toByteArray: Array[Byte] = {
+    val byteArrayOutputStream = new ByteArrayOutputStream()
+    val dataStream = new DataOutputStream(byteArrayOutputStream)
+    dataStream.writeLong(offset)
+    dataStream.writeInt(timestamp.`type`)
+    timestamp.value.map(dataStream.writeLong)
+    dataStream.writeInt(key.length)
+    dataStream.write(key)
+    dataStream.writeInt(value.length)
+    dataStream.write(value)
+    dataStream.writeInt(headers.length)
+    headers.map(h => {
+      dataStream.writeInt(h.key.length)
+      dataStream.write(h.key)
+      dataStream.writeInt(h.value.length)
+      dataStream.write(h.value)
+    })
+    dataStream.flush()
+    byteArrayOutputStream.toByteArray
+  }
+}
 
 object RecordBinary {
   def from(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]]): RecordBinary = {
@@ -19,12 +40,17 @@ object RecordBinary {
       timestamp = TimestampBinary.from(consumerRecord.timestamp),
       key = consumerRecord.key,
       value = consumerRecord.value,
-      headers = consumerRecord.headers.toChain.map(h => HeaderRecordBinary(h.key().getBytes, h.value())).toList
+      headers = consumerRecord.headers.toChain.map(HeaderRecordBinary.from(_)).toList
     )
   }
 }
 
-case class HeaderRecordBinary(key: Array[Byte], value: Array[Byte])
+case class HeaderRecordBinary(key: Array[Byte], value: Array[Byte]) {
+  def to(): Header = Header.apply(new String(key), value)
+}
+object HeaderRecordBinary {
+  def from(h: Header) = HeaderRecordBinary(h.key().getBytes, h.value())
+}
 trait TimestampType
 
 object CreateTime extends TimestampType
@@ -41,7 +67,9 @@ object TimestampType {
   }
 }
 
-case class TimestampBinary(`type`: Int, value: Option[Long])
+case class TimestampBinary(`type`: Int, value: Option[Long]) {
+  def getIfDefined: Option[Long] = if (`type` > 0) value else None
+}
 
 object TimestampBinary {
   def from(t: Timestamp): TimestampBinary = {
