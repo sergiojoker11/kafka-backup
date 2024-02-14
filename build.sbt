@@ -39,8 +39,6 @@ lazy val deps: Seq[Def.Setting[Seq[ModuleID]]] = Seq(
 )
 
 lazy val commonTestJavaOptions = Seq("-Dconfig.file=src/main/resources/dev-local.conf")
-lazy val mainClassName = "com.sj11.kafka.backup.Main"
-lazy val debuggingPort = sys.env.get("DEBUGGING_PORT").getOrElse(5025)
 
 lazy val root = (project in file("."))
   .enablePlugins(JavaAgent, JavaAppPackaging)
@@ -48,7 +46,7 @@ lazy val root = (project in file("."))
   .settings(Common.values)
   .settings(
     javaAgents += JavaAgent(
-      "io.prometheus.jmx" % "jmx_prometheus_javaagent" % "0.17.2" % "compile",
+      "io.prometheus.jmx" % "jmx_prometheus_javaagent" % "0.18.0" % "compile",
       arguments = "5556:/app/jmx_prometheus_javaagent/jmx_exporter.yml")
   )
   .settings(DockerSettings.dockerSettings)
@@ -66,12 +64,21 @@ lazy val root = (project in file("."))
     IntegrationTest extend Test
   )
 
-lazy val runDev = taskKey[Unit]("Run with development configuration")
-runDev / javaOptions ++= commonTestJavaOptions
-runDev / fork := true
-runDev / javaOptions += s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$debuggingPort"
+lazy val backupMainClassName = "com.sj11.kafka.backup.BackupMain"
+lazy val backupDebuggingPort = sys.env.get("DEBUGGING_PORT").getOrElse(5025)
+lazy val runBackup = taskKey[Unit]("Run backup service with development configuration")
+runBackup / javaOptions ++= commonTestJavaOptions
+runBackup / fork := true
+runBackup / javaOptions += s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$backupDebuggingPort"
+fullRunTask(runBackup, Compile, backupMainClassName)
 
-fullRunTask(runDev, Compile, mainClassName)
+lazy val restoreMainClassName = "com.sj11.kafka.backup.RestoreMain"
+lazy val restoreDebuggingPort = sys.env.get("DEBUGGING_PORT").getOrElse(5026)
+lazy val runRestore = taskKey[Unit]("Run restore service with development configuration")
+runRestore / javaOptions ++= commonTestJavaOptions
+runRestore / fork := true
+runRestore / javaOptions += s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$restoreDebuggingPort"
+fullRunTask(runRestore, Compile, restoreMainClassName)
 
 addCommandAlias("dockerFileTask", "docker:stage")
 
